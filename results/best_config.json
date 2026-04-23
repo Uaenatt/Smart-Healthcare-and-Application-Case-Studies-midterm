@@ -1,0 +1,11 @@
+{
+  "strategy": "BR",
+  "base": "RF",
+  "auc_macro": 1.0,
+  "hamming": 0.002916666666666667,
+  "per_label_auc": {
+    "Heart_Disease": 1.0,
+    "Diabetes": 1.0,
+    "Stroke": 1.0
+  }
+}

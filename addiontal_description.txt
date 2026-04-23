@@ -1,0 +1,7 @@
+請各組根據助教提供之 train_dataset.csv，針對 Heart_Disease、Diabetes 與 Stroke 三個目標欄位，進行「多標籤 (Multi-label)」機器學習之模型訓練。
+
+測試集發佈時間： 預計於報告前一週 (5/7) 早上 10 點，公布 test_dataset.csv (不含標籤)，請各組運用訓練好的模型進行預測評估。
+
+報告架構： 報告內容須包含 (1) Introduction (2) Methods (3) Results (4) Discussion。
+
+作業目標： 請各組嘗試處理臨床數據、分析特徵關聯並訓練預測模型，詳細的變數定義與專案說明請參閱附件投影片。
