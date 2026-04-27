@@ -1,0 +1,4 @@
+outcome,exposure,mediator,OR_total,p_total,OR_direct_given_mediator,p_direct,attenuation_pct
+Stroke,BMI,Blood_Pressure_Systolic,1.1142,0.3304,1.0605,0.6178,47.015
+Heart_Disease,BMI,Blood_Pressure_Systolic,1.0617,0.5105,1.0189,0.8458,69.377
+Diabetes,BMI,Glucose_Level,8.1566,0.0,44.03,0.0,-501.263

@@ -1,0 +1,12 @@
+feature,Heart_Disease,Diabetes,Stroke
+Age,1.005,1.005,1.005
+BMI,1.008,1.008,1.008
+Blood_Pressure_Systolic,1.007,1.007,1.007
+Blood_Pressure_Diastolic,1.004,1.004,1.004
+Cholesterol,1.003,1.003,1.003
+Glucose_Level,1.008,1.008,1.008
+Gender,1.005,1.005,1.005
+Smoking,1.003,1.003,1.003
+Alcohol_Intake,1.007,1.007,1.007
+Physical_Activity,1.007,1.007,1.007
+Family_History,1.005,1.005,1.005
