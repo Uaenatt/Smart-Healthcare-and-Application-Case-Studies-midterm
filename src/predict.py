@@ -1,10 +1,10 @@
 """
-predict.py — applies model.joblib to test_dataset.csv and writes predictions.csv.
+predict.py — applies outputs/model.joblib to a test CSV and writes predictions.
 
-Usage:
-    python predict.py                      # uses ./test_dataset.csv and ./model.joblib
-    python predict.py test_dataset.csv     # custom test CSV
-    python predict.py test_dataset.csv predictions.csv
+Usage (run from project root):
+    python src/predict.py                          # data/test.csv -> outputs/predictions.csv
+    python src/predict.py path/to/test.csv         # custom test CSV
+    python src/predict.py path/to/test.csv out.csv
 
 Output CSV columns:
     Patient_ID, Heart_Disease, Diabetes, Stroke,
@@ -24,6 +24,10 @@ import pandas as pd
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+DATA_DIR = ROOT / "data"
+OUT_DIR = ROOT / "outputs"
+OUT_DIR.mkdir(exist_ok=True)
 TARGETS = ["Heart_Disease", "Diabetes", "Stroke"]
 
 
@@ -38,15 +42,15 @@ def predict_proba(pipeline, X: pd.DataFrame) -> np.ndarray:
 
 
 def main(argv: list[str]) -> int:
-    test_path = Path(argv[1]) if len(argv) > 1 else HERE / "test_dataset.csv"
-    out_path = Path(argv[2]) if len(argv) > 2 else HERE / "predictions.csv"
+    test_path = Path(argv[1]) if len(argv) > 1 else DATA_DIR / "test.csv"
+    out_path = Path(argv[2]) if len(argv) > 2 else OUT_DIR / "predictions.csv"
     if not test_path.exists():
         print(f"ERROR: {test_path} not found. "
-              "Place the TA-provided test_dataset.csv next to predict.py "
+              "Place the TA-provided test CSV under ./data/ "
               "(or pass its path as the first argument).")
         return 1
 
-    artifact = joblib.load(HERE / "model.joblib")
+    artifact = joblib.load(OUT_DIR / "model.joblib")
     pipeline = artifact["pipeline"]
     features = artifact["features"]
     print(f"Loaded model: strategy={artifact['strategy']} base={artifact['base']}")

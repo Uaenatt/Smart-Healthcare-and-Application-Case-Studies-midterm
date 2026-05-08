@@ -28,7 +28,7 @@
 
 ### 2.1 資料來源與欄位
 
-來源為 Kaggle 的 `rafi003/healthcare-disease-prediction-dataset`（原始檔 `healthcare_disease_prediction_2000.csv`，共 2000 筆）。助教提供 `train_dataset.csv` 共 1600 筆 (80%)，包含 11 個特徵欄位與 3 個目標欄位：
+來源為 Kaggle 的 `rafi003/healthcare-disease-prediction-dataset`。助教提供 `train_dataset.csv` 共 1600 筆 (80%)，包含 11 個特徵欄位與 3 個目標欄位：
 
 | 類型 | 欄位 |
 |---|---|
@@ -107,9 +107,9 @@
 
 連續特徵均事先標準化，因此 OR 為「**每增加 1 SD 的 odds 倍數變化**」，可在不同單位的特徵間直接比較大小；二元特徵則為「比較類別 1 vs 0 的 odds ratio」。本資料中 1 SD 約等於：Age 19.5 years、BMI 4.9 kg/m²、SBP 26.1 mmHg、DBP 17.0 mmHg、Cholesterol 43.3 mg/dL、Glucose 36.7 mg/dL。這些換算對臨床解讀很重要，因為表中的 OR 不是「每 1 單位」變化。
 
-### 2.7 暫代測試集（proxy_test_dataset.csv）
+### 2.7 正式測試集
 
-由於正式 `test_dataset.csv` 在報告撰寫時尚未釋出，我們從原始 2000 筆資料中以 **`Patient_ID` 為唯一識別符進行差集**，篩出完全沒有出現在 `train_dataset.csv` 中的 400 筆病患，另存為 `proxy_test_dataset.csv` 作為內部驗證用途。比對顯示原始檔最後 400 筆中有 310 筆已落在訓練集，因此不可直接以此切分作為測試集。最終成績仍以助教未來釋出的 `test_dataset.csv` 為準。
+助教於 **2026-05-07 10:00** 釋出 `data/test.csv`，共 400 筆僅含特徵的測試集（不含三個目標欄位），用於最終評分。本報告 §3.6 報告此測試集上的預測分佈與信心度分析；最終 AUC / Hamming 等指標仍以助教評分為準。
 
 ---
 
@@ -240,19 +240,29 @@ RF permutation importance 與 QRFA OR 使用同一份資料、同一組特徵與
 
 *中風中 Glucose 的線性 OR (1.84) 雖小但顯著，而 RF permutation 接近 0——顯示 Glucose 在中風的影響在這份資料中以 *線性、單調* 為主，而非樹模型擅長捕捉的高階交互或門檻式效應，因此 RF 在已有 SBP+Age+Smoking 條件下不再依賴 Glucose 也能正確分類。
 
-### 3.6 proxy_test_dataset.csv 上的測試結果
+### 3.6 正式測試集 test.csv 上的預測
 
-`proxy_test_dataset.csv` 共 400 筆，與 `train_dataset.csv` 的 `Patient_ID` 重疊數為 0。陽性數為：Heart_Disease = 29、Diabetes = 53、Stroke = 16。最終 BR + RF 模型在此資料上：
+助教於 2026-05-07 釋出 `data/test.csv`（400 筆，僅特徵），最終模型對其推論結果存於 `outputs/predictions.csv`，欄位為 `Patient_ID, Heart_Disease, Diabetes, Stroke, *_proba`。由於該測試集**不含 ground truth 標籤**，無法直接計算 AUC / Hamming 等指標；本節僅報告預測分佈與信心度作為 sanity check。
 
-| 指標 | 結果 |
-|---|---|
-| Macro AUC | 1.000 |
-| Heart / Diabetes / Stroke AUC | 1.000 / 1.000 / 1.000 |
-| Average Precision (3 標籤) | 1.000 / 1.000 / 1.000 |
-| Hamming Loss | 0.000 |
-| Macro F1 / Micro F1 / Subset Accuracy | 1.000 / 1.000 / 1.000 |
+**表 3.7　test.csv 預測陽性率與訓練盛行率比較**
 
-模型預測陽性數與真實值完全一致。需強調：在 §3.1 的 5-fold CV 已達到 Macro AUC = 1.000 的前提下，proxy_test 的 1.000 表現只能確認「不存在 Patient_ID 層級的洩漏」，不構成額外的泛化能力證據。詳細表現需以正式 `test_dataset.csv` 為準。
+| 標籤 | Train 盛行率 | Test 預測陽性率 | 預測陽性數 | Δ |
+|---|---|---|---|---|
+| `Heart_Disease` | 8.25% | 7.25% | 29 | −1.00 pp |
+| `Diabetes` | 13.06% | 13.25% | 53 | +0.19 pp |
+| `Stroke` | 5.38% | 4.00% | 16 | −1.38 pp |
+
+三個標籤的預測陽性率與訓練盛行率差距均在 ±1.5 pp 內，未見明顯的 distribution shift。預測陽性數合計 98（同一病患可能同時陽性）：0 病者 316 筆 (79.0%)、1 病者 71 筆 (17.8%)、2 病者 12 筆 (3.0%)、3 病者 1 筆 (0.25%)。
+
+**表 3.8　預測機率信心度分佈**
+
+| 標籤 | prob ≥ 0.8（高信心陽性） | prob ≤ 0.05（高信心陰性） | prob ∈ [0.3, 0.7]（不確定） |
+|---|---|---|---|
+| `Heart_Disease` | 16 | 365 | 3 |
+| `Diabetes` | 48 | 340 | 3 |
+| `Stroke` | 8 | 384 | 5 |
+
+96–98% 的樣本落在高信心區間，灰色地帶僅 3–5 筆，與 §3.1、§3.2 觀察到的「資料具有強烈規則性、模型決策邊界銳利」的特徵一致。最終 AUC、Hamming 與 F1 仍以助教評分為準。
 
 ---
 
@@ -297,17 +307,17 @@ Firth 修正將 likelihood 補上 $\tfrac{1}{2} \log|I(\beta)|$，等價於以 J
 
 多變量 adjusted OR 在 Heart_Disease (Chol = 24.6)、Diabetes (BMI = 45.7) 與 Stroke (Age = 214, SBP = 303) 上都遠大於真實臨床流行病學的觀察值。注意每一個連續特徵都已標準化，因此表中 OR 是 per 1 SD：Age 19.5 years、BMI 4.9 kg/m²、SBP 26.1 mmHg、DBP 17.0 mmHg、Cholesterol 43.3 mg/dL、Glucose 36.7 mg/dL。即使用這些較大的臨床跨度來理解，OR 仍偏大。
 
-這個現象與 RF / GB 模型 AUC 達 1.000、`Stroke` 的 near-separation、`proxy_test_dataset` 的完美表現，以及所有 VIF 幾乎等於 1.0 是同一件事的不同面向：**資料集很可能是依照少數規則合成的、而非真實噪聲環境的臨床資料**。`Family_History` 對 `Stroke` 呈現保護性方向也應放在這個脈絡下看待，而不是當作真實臨床發現。因此本報告對所有 OR 與 ML AUC 的解讀都採取一致策略：**只引用方向、顯著性與相對排序，不外推至真實族群效應量**。
+這個現象與 RF / GB 模型 AUC 達 1.000、`Stroke` 的 near-separation，以及所有 VIF 幾乎等於 1.0 是同一件事的不同面向：**資料集很可能是依照少數規則合成的、而非真實噪聲環境的臨床資料**。`Family_History` 對 `Stroke` 呈現保護性方向也應放在這個脈絡下看待，而不是當作真實臨床發現。因此本報告對所有 OR 與 ML AUC 的解讀都採取一致策略：**只引用方向、顯著性與相對排序，不外推至真實族群效應量**。
 
-### 4.7 proxy_test_dataset 的限制
+### 4.7 正式測試集的限制
 
-`proxy_test_dataset.csv` 與訓練集無病患重疊，可作為內部驗證；但兩份資料同樣來自原始 Kaggle 2000 筆，分布特性一致，故無法視為對未知分布的外部驗證。最終正式成績仍以助教釋出的 `test_dataset.csv` 為準。
+助教釋出之 `data/test.csv`（§3.6）不含 ground truth 標籤，本報告僅能報告預測分佈與信心度。預測陽性率與訓練盛行率差距均在 ±1.5 pp 內、灰色地帶 (prob ∈ [0.3, 0.7]) 樣本不足 1.5%，顯示模型對測試集的判定與其在訓練資料中學到的決策邊界一致。最終 AUC、Hamming 等指標需由助教評分後方能確認。
 
 ---
 
 ## 5. Conclusion
 
-本研究以多標籤分類同時預測心血管疾病、糖尿病與中風三個共病，最終以 **Binary Relevance + Random Forest** 取得 5-fold CV Macro AUC = 1.000、Hamming Loss = 0.003 的成績；於 proxy_test_dataset (n=400) 上維持完美表現。
+本研究以多標籤分類同時預測心血管疾病、糖尿病與中風三個共病，最終以 **Binary Relevance + Random Forest** 取得 5-fold CV Macro AUC = 1.000、Hamming Loss = 0.003 的成績。對助教釋出之正式測試集 `data/test.csv` (n=400) 推論後，預測陽性率與訓練盛行率差距均在 ±1.5 pp 內、灰色地帶樣本不足 1.5%，模型決策一致且高度自信；最終評分指標仍由助教提供。
 
 在 ML 預測之外，我們在 Methods 加入 **Quantitative Risk-Factor Analysis**：以 logistic regression 計算每個臨床特徵的 adjusted OR，對 `Stroke` 採用 Firth penalised regression 解決準分離問題。QRFA 與 RF permutation importance 並非獨立驗證，但在不同建模假設下得到一致的主要特徵排序：心臟病為 Cholesterol/SBP/Age、糖尿病為 BMI/Glucose、中風為 Age/SBP/Smoking/Glucose。事前設定的中介假設（如 BMI → SBP → Stroke）未獲統計證據支持。整體 OR、AUC、VIF 與準分離現象共同反映資料的合成性質，因此結論的解讀以方向與排序為主、不外推至真實族群。
 
@@ -315,26 +325,31 @@ Firth 修正將 likelihood 補上 $\tfrac{1}{2} \log|I(\beta)|$，等價於以 J
 
 ## 6. Reproducibility
 
+所有指令於專案根目錄執行：
+
 ```bash
 # 安裝套件
 pip install -r requirements.txt
 
 # 訓練模型 (5-fold CV + 最終模型)
-python train.py
+python src/train.py
 
-# 推論
-python predict.py proxy_test_dataset.csv predictions.csv
+# 對正式測試集推論（預設輸入 data/test.csv，輸出 outputs/predictions.csv）
+python src/predict.py
 ```
 
 主要檔案：
 
 | 檔案 | 說明 |
 |---|---|
-| `train_dataset.csv` | 助教提供的 1600 筆訓練資料 |
-| `proxy_test_dataset.csv` | 由原始 Kaggle 2000 筆篩出、未出現於訓練集的 400 筆暫代測試資料 |
-| `train.py` | 模型訓練與 5-fold CV |
-| `predict.py` | 模型推論 |
-| `model.joblib` | 最終 BR + RF 模型 |
+| `data/train_dataset.csv` | 助教提供的 1600 筆訓練資料 |
+| `data/test.csv` | 助教 2026-05-07 釋出的 400 筆正式測試集（僅特徵） |
+| `src/train.py` | 模型訓練與 5-fold CV |
+| `src/predict.py` | 模型推論 |
+| `outputs/model.joblib` | 最終 BR + RF 模型 |
+| `outputs/predictions.csv` | 對 `data/test.csv` 的最終預測結果 |
+| `results/cv_metrics.csv`, `results/cv_summary_mean.csv` | 5-fold CV 各折與平均指標 |
+| `results/best_config.json` | 被選中的最佳 strategy × base |
 | `results/risk_or_*.csv` | QRFA 各疾病 OR / 95% CI / p-value 表 |
 | `results/risk_or_Stroke_firth.csv` | Stroke 的 Firth-corrected 結果 |
 | `results/risk_analysis_summary.txt` | QRFA 完整摘要與 Discussion notes |

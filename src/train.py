@@ -46,10 +46,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 HERE = Path(__file__).resolve().parent
-FIG_DIR = HERE / "figures"
-RES_DIR = HERE / "results"
+ROOT = HERE.parent
+DATA_DIR = ROOT / "data"
+FIG_DIR = ROOT / "figures"
+RES_DIR = ROOT / "results"
+OUT_DIR = ROOT / "outputs"
 FIG_DIR.mkdir(exist_ok=True)
 RES_DIR.mkdir(exist_ok=True)
+OUT_DIR.mkdir(exist_ok=True)
 
 TARGETS = ["Heart_Disease", "Diabetes", "Stroke"]
 NUM = ["Age", "BMI", "Blood_Pressure_Systolic", "Blood_Pressure_Diastolic",
@@ -224,7 +228,7 @@ def feature_importance_plots(model: Pipeline, X: pd.DataFrame, Y: pd.DataFrame):
 
 
 def main():
-    X, Y = load_train(HERE / "train_dataset.csv")
+    X, Y = load_train(DATA_DIR / "train_dataset.csv")
     print(f"Loaded {len(X)} rows, {len(FEATURES)} features, {len(TARGETS)} labels")
     print("Prevalence:", Y.mean().round(4).to_dict())
 
@@ -258,7 +262,7 @@ def main():
     joblib.dump({
         "pipeline": final, "features": FEATURES, "targets": TARGETS,
         "strategy": best_key[0], "base": best_key[1],
-    }, HERE / "model.joblib")
+    }, OUT_DIR / "model.joblib")
     print(f"Saved model.joblib (strategy={best_key[0]}, base={best_key[1]})")
 
     feature_importance_plots(final, X, Y)
